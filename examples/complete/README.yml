@@ -1,0 +1,7 @@
+title: "Complete Example"
+description: "This example demonstrates the configuration of a Terraform module for managing Route53 zones with both public and private settings."
+main_purpose: "The main purpose is to configure Route53 zones within a VPC using Terraform."
+key_features:
+  - "**Public Zone Configuration**: Sets up a public Route53 zone with the private attribute set to false."
+  - "**Private Zone Configuration**: Sets up a private Route53 zone with the private attribute set to true."
+  - "**Vpc Integration**: Integrates with a VPC, although the VPC ID is hardcoded in this example."

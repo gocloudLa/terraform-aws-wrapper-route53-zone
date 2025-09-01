@@ -1,0 +1,34 @@
+module_name: Terraform Route53 DNS Module
+module_description: The Terraform wrapper for Route53 simplifies the configuration of the DNS Service in the AWS cloud. This wrapper functions as a predefined template, facilitating the creation and management of Zones in Route53 by handling all the technical details.
+module_badges:
+  - url: "https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/releases/latest"
+    image: "https://img.shields.io/github/v/release/gocloudLa/terraform-aws-wrapper-route53-zone.svg?style=for-the-badge"
+    alt: "Latest Release"
+  - url: ""
+    image: "https://img.shields.io/github/last-commit/gocloudLa/terraform-aws-wrapper-route53-zone.svg?style=for-the-badge"
+    alt: "Last Commit"
+  - url: "https://registry.terraform.io/modules/gocloudLa/wrapper-route53-zone/aws"
+    image: "https://img.shields.io/badge/Terraform-Registry-7B42BC?style=for-the-badge&logo=terraform&logoColor=white"
+    alt: "Terraform Registry"
+quick_start: |
+  ```hcl
+  route53_parameters = {
+      zones = {
+        "${local.zone_public}" = {
+          private = false
+        }
+  
+        "${local.zone_private}" = {
+          private = true
+        }
+      }
+    }
+  
+    # Deberia venir como output del modulo de wrapper_vpc.
+    vpc_id = module.wrapper_vpc.vpc.vpc_id
+  ```
+features: []
+important_notes: ""
+input_table: |
+  | `name` | Define the domain name, using the key of each entry in the map. | `any` | `{}` | no |
+  | `vpc_id` | Specify the identifier of the VPC associated with the zone if it is private. | `string` | `""` | no |

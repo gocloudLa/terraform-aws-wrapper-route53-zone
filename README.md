@@ -36,6 +36,12 @@ route53_parameters = {
 
 
 
+## 📑 Inputs
+| Name     | Description                                                                  | Type     | Default | Required |
+| -------- | ---------------------------------------------------------------------------- | -------- | ------- | -------- |
+| `name`   | Define the domain name, using the key of each entry in the map.              | `any`    | `{}`    | no       |
+| `vpc_id` | Specify the identifier of the VPC associated with the zone if it is private. | `string` | `""`    | no       |
+
 
 
 

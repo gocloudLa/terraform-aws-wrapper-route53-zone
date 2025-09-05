@@ -10,5 +10,5 @@ resource "aws_route53_zone" "this" {
     }
   }
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, try(var.route53_parameters.tags, var.route53_defaults.tags, null))
 }

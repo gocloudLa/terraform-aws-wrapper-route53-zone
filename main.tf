@@ -6,7 +6,7 @@ resource "aws_route53_zone" "this" {
     for_each = lookup(each.value, "private", false) == true ? { validate = true } : {}
 
     content {
-      vpc_id = var.vpc_id
+      vpc_id = try(each.value.vpc_id, var.vpc_parameter.vpcs[each.value.vpc].vpc_id)
     }
   }
 

@@ -11,12 +11,12 @@
 /*----------------------------------------------------------------------*/
 variable "route53_parameters" {
   type        = any
-  description = "Route53 parameteres to declare hosted zone"
+  description = "Route53 parameters to declare hosted zone"
   default     = {}
 }
 
 variable "route53_defaults" {
   type        = any
-  description = "Route53 default parameteres to declare hosted zone"
+  description = "Route53 default parameters to declare hosted zone"
   default     = {}
 }

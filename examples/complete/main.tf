@@ -11,12 +11,16 @@ module "wrapper_route53" {
 
       "${local.zone_private}" = {
         private = true
+        vpc     = "networking"
+        # Or: vpc_id = "vpc-xxxxxxxxxxxxxx"
       }
     }
   }
 
-  # Should come as output from the wrapper_vpc module.
-  # vpc_id = module.wrapper_vpc.vpc.vpc_id
-  vpc_id = "vpc-xxxxxxxxxxxxxx"
-
+  # Should come from wrapper_vpc (e.g. `vpc_parameter = { vpcs = module.wrapper_vpc.vpcs }`). Hardcoded here only so this example is self-contained.
+  vpc_parameter = {
+    vpcs = {
+      networking = { vpc_id = "vpc-xxxxxxxxxxxxxx" }
+    }
+  }
 }

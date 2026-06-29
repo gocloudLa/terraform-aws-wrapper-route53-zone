@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/compare/v1.0.0...v2.0.0) (2026-06-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **module:** add new vpc module compatibility ([#3](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/issues/3))
+
+### Features
+
+* **module:** add new vpc module compatibility ([#3](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/issues/3)) ([217bca1](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/commit/217bca1a2a5e5986cc4778a6bc91c5373670b9d9))
+
 ## 1.0.0 (2025-09-05)
 
 

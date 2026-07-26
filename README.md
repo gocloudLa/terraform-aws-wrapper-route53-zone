@@ -6,7 +6,7 @@ Each module encapsulates best practices, security configurations, and sensible d
 
 ## 📦 Module: Terraform Route53 Zone Module
 <p align="right"><a href="https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/releases/latest"><img src="https://img.shields.io/github/v/release/gocloudLa/terraform-aws-wrapper-route53-zone.svg?style=for-the-badge" alt="Latest Release"/></a><a href=""><img src="https://img.shields.io/github/last-commit/gocloudLa/terraform-aws-wrapper-route53-zone.svg?style=for-the-badge" alt="Last Commit"/></a><a href="https://registry.terraform.io/modules/gocloudLa/wrapper-route53-zone/aws"><img src="https://img.shields.io/badge/Terraform-Registry-7B42BC?style=for-the-badge&logo=terraform&logoColor=white" alt="Terraform Registry"/></a></p>
-Wrapper module for AWS Route53 that simplifies the creation and management of public and private hosted zones. Supports VPC association for private zones through direct VPC IDs or VPC wrapper integration.
+Wrapper module for AWS Route53 that simplifies the creation and management of public and private hosted zones. Supports VPC association for private zones through direct VPC IDs or VPC wrapper integration, including cross-account sharing of private hosted zones across separate workspaces.
 
 
 ### ✨ Features
@@ -15,22 +15,30 @@ Wrapper module for AWS Route53 that simplifies the creation and management of pu
 
 - 🔒 [Private Hosted Zone with VPC Association](#private-hosted-zone-with-vpc-association) - Create private DNS zones scoped to a VPC.
 
+- 🔗 [Cross-Account Private Zone Sharing](#cross-account-private-zone-sharing) - Share a private hosted zone with a VPC in another AWS account using two separate workspaces.
+
 
 
 
 ## 🚀 Quick Start
 ```hcl
 route53_parameters = {
-  zones = {
-    "lab.democorp.cloud" = {
-      private = false
-    }
+  "lab.democorp.cloud" = {
+    private = false
+  }
 
-    "lab.democorp" = {
-      private = true
-      vpc     = "networking"
-      # Or: vpc_id = "vpc-xxxxxxxxxxxxxx"
-    }
+  "lab.democorp" = {
+    private = true
+    vpc     = "prod"
+    # Or: vpc_id = "vpc-xxxxxxxxxxxxxx"
+
+    # vpc_association_authorizations = {
+    #   networking = {
+    #     vpc_id = "vpc-xxxxxxxxxxxxxx"
+    #     # vpc_region = "us-east-2"
+    #     # active     = true # Default: false. Set true after the VPC-owner association exists.
+    #   }
+    # }
   }
 }
 ```
@@ -39,17 +47,15 @@ route53_parameters = {
 ## 🔧 Additional Features Usage
 
 ### Public Hosted Zone
-Creates an `aws_route53_zone` resource for each entry in the `zones` map where `private = false`. The zone domain name is derived from the map key.
+Each key in `route53_parameters` becomes an `aws_route53_zone` when `create_zone` is true (default) and `private = false`. The map key is the hosted zone domain name.
 
 
 <details><summary>Public zone</summary>
 
 ```hcl
 route53_parameters = {
-  zones = {
-    "lab.democorp.cloud" = {
-      private = false
-    }
+  "lab.democorp.cloud" = {
+    private = false
   }
 }
 ```
@@ -66,11 +72,9 @@ When `private = true`, the module associates the zone with a VPC via a dynamic `
 
 ```hcl
 route53_parameters = {
-  zones = {
-    "lab.democorp" = {
-      private = true
-      vpc     = "networking"
-    }
+  "lab.democorp" = {
+    private = true
+    vpc     = "networking"
   }
 }
 ```
@@ -82,10 +86,54 @@ route53_parameters = {
 
 ```hcl
 route53_parameters = {
-  zones = {
-    "lab.democorp" = {
-      private = true
-      vpc_id  = "vpc-xxxxxxxxxxxxxx"
+  "lab.democorp" = {
+    private = true
+    vpc_id  = "vpc-xxxxxxxxxxxxxx"
+  }
+}
+```
+
+
+</details>
+
+
+### Cross-Account Private Zone Sharing
+Same `route53_parameters` shape on both sides (zone name as map key). In the **zone-owner** workspace, `vpc_association_authorizations` creates `aws_route53_vpc_association_authorization` for each remote VPC. In the **VPC-owner** workspace, declare `zone_association` (`zone_id`, `vpc` / `vpc_id`) to create `aws_route53_zone_association` and accept the share. After that association exists, set `active = true` on the authorization entry in the zone-owner config so the remote VPC is included in the zone `vpc` set and owner-side plan drift is cleared. Leave `active` at the default `false` until the association is in place — setting it earlier causes `AssociateVPCWithHostedZone` to fail from the zone-owner account.
+
+
+<details><summary>Zone owner — authorize a remote VPC</summary>
+
+```hcl
+route53_parameters = {
+  "lab.democorp" = {
+    private = true
+    vpc     = "prod"
+
+    vpc_association_authorizations = {
+      networking = {
+        vpc_id = "vpc-xxxxxxxxxxxxxx"
+        # vpc_region = "us-east-2"
+        # active     = true # Default: false. Set true after the VPC-owner association exists.
+      }
+    }
+  }
+}
+```
+
+
+</details>
+
+<details><summary>VPC owner — associate after authorization</summary>
+
+```hcl
+route53_parameters = {
+  "lab.democorp" = {
+    create_zone = false
+    zone_association = {
+      zone_id = "ZXXXXXXXXXXXXX"
+      vpc     = "networking"
+      # Or: vpc_id = "vpc-xxxxxxxxxxxxxx"
+      # vpc_region = "us-east-2"
     }
   }
 }
@@ -98,13 +146,16 @@ route53_parameters = {
 
 
 ## 📑 Inputs
-| Name    | Description                                                                               | Type          | Default | Required |
-| ------- | ----------------------------------------------------------------------------------------- | ------------- | ------- | -------- |
-| zones   | Map of zone domain name → zone config. The map key is the hosted zone domain name.        | `map`         | `{}`    | yes      |
-| private | Set to `true` to create a private hosted zone associated with a VPC.                      | `bool`        | `false` | no       |
-| vpc     | Key into `vpc_parameter.vpcs` map used to resolve the VPC ID for private zones.           | `string`      | `null`  | no       |
-| vpc_id  | Direct VPC ID for private zone association. Used when not consuming a VPC wrapper output. | `string`      | `null`  | no       |
-| tags    | Map of tags applied to all zones managed by this invocation.                              | `map(string)` | `null`  | no       |
+| Name                           | Description                                                                                                                                  | Type          | Default | Required |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ------- | -------- |
+| create_zone                    | Create the hosted zone. Ignored when `zone_association` is set.                                                                              | `bool`        | `true`  | no       |
+| private                        | Set to `true` to create a private hosted zone associated with a VPC.                                                                         | `bool`        | `false` | no       |
+| vpc                            | Key into `vpc_parameter.vpcs` map used to resolve the VPC ID for private zones.                                                              | `string`      | `null`  | no       |
+| vpc_id                         | Direct VPC ID for private zone. Used when not consuming a VPC wrapper output.                                                                | `string`      | `null`  | no       |
+| vpc_region                     | Optional VPC region (only when the VPC is in another region than the provider).                                                              | `string`      | `null`  | no       |
+| vpc_association_authorizations | Map of auth key → `{ vpc_id, vpc_region, active }` under a private zone. Creates cross-account association authorizations (zone-owner side). | `map`         | `{}`    | no       |
+| active                         | Under each authorization entry: when `true`, includes that remote VPC in the zone `vpc` set (set after VPC-owner association).               | `bool`        | `false` | no       |
+| tags                           | Map of tags applied per zone.                                                                                                                | `map(string)` | `null`  | no       |
 
 
 
@@ -114,6 +165,7 @@ route53_parameters = {
 
 ## ⚠️ Important Notes
 - ⚠️ **Private zones require a VPC:** set either `vpc` (key into `vpc_parameter.vpcs`) or `vpc_id` when `private = true`; omitting both will cause a plan-time error.
+- ⚠️ **Breaking change 2.0:** `route53_parameters.zones` nesting was removed — pass zone entries directly under `route53_parameters`.
 - ℹ️ **Name server delegation:** public zones return NS records that must be registered at your domain registrar before DNS resolution is functional.
 
 

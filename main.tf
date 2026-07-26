@@ -1,14 +1,32 @@
 resource "aws_route53_zone" "this" {
-  for_each = lookup(var.route53_parameters, "zones", {})
+  for_each = local.zones_create
 
   name = each.key
+
   dynamic "vpc" {
-    for_each = lookup(each.value, "private", false) == true ? { validate = true } : {}
+    for_each = each.value.vpcs
 
     content {
-      vpc_id = try(each.value.vpc_id, var.vpc_parameter.vpcs[each.value.vpc].vpc_id)
+      vpc_id     = vpc.value.vpc_id
+      vpc_region = vpc.value.vpc_region
     }
   }
 
-  tags = merge(local.common_tags, try(var.route53_parameters.tags, var.route53_defaults.tags, null))
+  tags = merge(local.common_tags, try(each.value.tags, null))
+}
+
+resource "aws_route53_vpc_association_authorization" "this" {
+  for_each = local.vpc_association_authorizations
+
+  zone_id    = aws_route53_zone.this[each.value.zone_name].zone_id
+  vpc_id     = each.value.vpc_id
+  vpc_region = each.value.vpc_region
+}
+
+resource "aws_route53_zone_association" "this" {
+  for_each = local.zones_associate
+
+  zone_id    = each.value.zone_id
+  vpc_id     = each.value.vpc_id
+  vpc_region = each.value.vpc_region
 }

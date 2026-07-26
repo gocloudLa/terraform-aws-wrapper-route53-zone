@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/compare/v2.0.0...v2.1.0) (2026-07-26)
+
+
+### Features
+
+* **association:** add zone_association support ([#5](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/issues/5)) ([54caab7](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/commit/54caab72f4956a32a44367e8ebe66a97e44f7e01))
+
 ## [2.0.0](https://github.com/gocloudLa/terraform-aws-wrapper-route53-zone/compare/v1.0.0...v2.0.0) (2026-06-29)
 
 

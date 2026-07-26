@@ -24,10 +24,15 @@ quick_start: |
       # Or: vpc_id = "vpc-xxxxxxxxxxxxxx"
 
       # vpc_association_authorizations = {
-      #   networking = {
+      #   # Same account — active = true (no zone_association workspace needed)
+      #   peer = {
       #     vpc_id = "vpc-xxxxxxxxxxxxxx"
-      #     # vpc_region = "us-east-2"
-      #     # active     = true # Default: false. Set true after the VPC-owner association exists.
+      #     active = true
+      #   }
+      #   # Cross-account — active = false until the VPC-owner associates
+      #   networking = {
+      #     vpc_id = "vpc-02xxxxxxxxxxxxx" # Remote vpc_id (other account)
+      #     # active = true # Set true after the VPC-owner association exists (clears drift).
       #   }
       # }
     }
@@ -76,10 +81,33 @@ features:
           }
           ```
   - icon: "🔗"
+    title: "Same-Account Extra VPC Association"
+    short_description: "Attach additional VPCs from the same AWS account to a private hosted zone."
+    long_description: |
+      Under `vpc_association_authorizations`, declare the peer VPC and set `active = true`. In the same account the zone owner can associate that VPC directly, so a separate `zone_association` workspace is not required.
+    examples:
+      - title: "Same-account peer VPC"
+        code: |
+          ```hcl
+          route53_parameters = {
+            "lab.democorp" = {
+              private = true
+              vpc     = "prod"
+
+              vpc_association_authorizations = {
+                peer = {
+                  vpc_id = "vpc-xxxxxxxxxxxxxx"
+                  active = true
+                }
+              }
+            }
+          }
+          ```
+  - icon: "🔀"
     title: "Cross-Account Private Zone Sharing"
     short_description: "Share a private hosted zone with a VPC in another AWS account using two separate workspaces."
     long_description: |
-      Same `route53_parameters` shape on both sides (zone name as map key). In the **zone-owner** workspace, `vpc_association_authorizations` creates `aws_route53_vpc_association_authorization` for each remote VPC. In the **VPC-owner** workspace, declare `zone_association` (`zone_id`, `vpc` / `vpc_id`) to create `aws_route53_zone_association` and accept the share. After that association exists, set `active = true` on the authorization entry in the zone-owner config so the remote VPC is included in the zone `vpc` set and owner-side plan drift is cleared. Leave `active` at the default `false` until the association is in place — setting it earlier causes `AssociateVPCWithHostedZone` to fail from the zone-owner account.
+      Same `route53_parameters` shape on both sides (zone name as map key). In the **zone-owner** workspace, `vpc_association_authorizations` creates `aws_route53_vpc_association_authorization` for each remote VPC. In the **VPC-owner** workspace, declare `zone_association` (`zone_id`, `vpc` / `vpc_id`) with `create_zone = false` to create `aws_route53_zone_association` and accept the share. After that association exists, set `active = true` on the authorization entry in the zone-owner config so the remote VPC is included in the zone `vpc` set and owner-side plan drift is cleared. Leave `active` at the default `false` until the association is in place — setting it earlier causes `AssociateVPCWithHostedZone` to fail from the zone-owner account.
     examples:
       - title: "Zone owner — authorize a remote VPC"
         code: |
@@ -126,5 +154,5 @@ input_table: |
   | vpc_region | Optional VPC region (only when the VPC is in another region than the provider). | `string` | `null` | no |
   | zone_association | Object `{ zone_id, vpc \| vpc_id, vpc_region }`. When set, associates a VPC to an existing hosted zone (VPC-owner side). | `object` | `null` | no |
   | vpc_association_authorizations | Map of auth key → `{ vpc_id, vpc_region, active }` under a private zone. Creates cross-account association authorizations (zone-owner side). | `map` | `{}` | no |
-  | active | Under each authorization entry: when `true`, includes that remote VPC in the zone `vpc` set (set after VPC-owner association). | `bool` | `false` | no |
+  | active | Under each authorization entry: when `true`, includes that VPC in the zone `vpc` set. Use immediately for same-account peers; for cross-account, set after the VPC-owner `zone_association`. | `bool` | `false` | no |
   | tags | Map of tags applied per zone. | `map(string)` | `null` | no |
